@@ -65,45 +65,45 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
-// Form handling
-const quoteForm = document.getElementById('quoteForm');
-const formSuccess = document.getElementById('formSuccess');
-const submitBtn = document.getElementById('submitBtn');
+// Both forms use the catering team's Formspree inbox.
+function connectForm(form, successPanel) {
+    const button = form.querySelector('button[type="submit"]');
+    const buttonText = button.querySelector('.btn-text');
+    const loadingText = button.querySelector('.btn-loading');
+    const errorMessage = form.querySelector('.form-error');
 
-if (quoteForm) {
-    quoteForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (button.disabled) return;
 
-        const btnText = submitBtn.querySelector('.btn-text');
-        const btnLoading = submitBtn.querySelector('.btn-loading');
-
-        // Show loading
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'inline';
-        submitBtn.disabled = true;
+        button.disabled = true;
+        buttonText.style.display = 'none';
+        loadingText.style.display = 'inline';
+        errorMessage.textContent = '';
 
         try {
-            const formData = new FormData(quoteForm);
-            const response = await fetch(quoteForm.action, {
+            const response = await fetch(form.action, {
                 method: 'POST',
-                body: formData,
+                body: new FormData(form),
                 headers: { 'Accept': 'application/json' }
             });
+            if (!response.ok) throw new Error('Submission was rejected');
 
-            if (response.ok) {
-                // Show success
-                quoteForm.style.display = 'none';
-                formSuccess.style.display = 'block';
-            } else {
-                throw new Error('Form submission failed');
-            }
-        } catch (error) {
-            // If Formspree isn't set up yet, still show success for demo
-            quoteForm.style.display = 'none';
-            formSuccess.style.display = 'block';
+            form.hidden = true;
+            successPanel.hidden = false;
+            successPanel.focus();
+        } catch {
+            errorMessage.textContent = 'We couldn’t confirm your submission. Your answers are still here. Please try again.';
+        } finally {
+            button.disabled = false;
+            buttonText.style.display = '';
+            loadingText.style.display = 'none';
         }
     });
 }
+
+connectForm(document.getElementById('quoteForm'), document.getElementById('formSuccess'));
+connectForm(document.getElementById('reviewForm'), document.getElementById('reviewSuccess'));
 
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -136,66 +136,5 @@ staggerElements.forEach(el => {
     el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     staggerObserver.observe(el);
 });
-
-// Star rating
-const stars = document.querySelectorAll('.rating-star');
-const ratingInput = document.getElementById('ratingValue');
-
-if (stars.length) {
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
-            const val = star.dataset.value;
-            ratingInput.value = val;
-            stars.forEach(s => {
-                s.classList.toggle('active', s.dataset.value <= val);
-            });
-        });
-        star.addEventListener('mouseenter', () => {
-            const val = star.dataset.value;
-            stars.forEach(s => {
-                s.style.color = s.dataset.value <= val ? '#d4a017' : '';
-            });
-        });
-    });
-    document.getElementById('starRating').addEventListener('mouseleave', () => {
-        stars.forEach(s => {
-            s.style.color = s.classList.contains('active') ? '#d4a017' : '';
-        });
-    });
-}
-
-// Review form handling
-const reviewForm = document.getElementById('reviewForm');
-const reviewSuccess = document.getElementById('reviewSuccess');
-
-if (reviewForm) {
-    reviewForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!ratingInput.value) {
-            alert('Please select a star rating.');
-            return;
-        }
-        const btn = document.getElementById('reviewSubmitBtn');
-        const btnText = btn.querySelector('.btn-text');
-        const btnLoading = btn.querySelector('.btn-loading');
-        btnText.style.display = 'none';
-        btnLoading.style.display = 'inline';
-        btn.disabled = true;
-
-        try {
-            const formData = new FormData(reviewForm);
-            const response = await fetch(reviewForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' }
-            });
-            reviewForm.style.display = 'none';
-            reviewSuccess.style.display = 'block';
-        } catch (error) {
-            reviewForm.style.display = 'none';
-            reviewSuccess.style.display = 'block';
-        }
-    });
-}
 
 console.log('☘ Shamrock\'s Kitchen & Catering loaded');
